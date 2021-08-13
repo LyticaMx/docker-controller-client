@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "python-docker-controller"
+version = "0.1.0"
+description = "A simple script to control docker with python and a JSON config file"
+authors = ["Mario <mariohdpz@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.6.9"
+docker = "^5.0.0"
+
+[tool.poetry.dev-dependencies]
+black = "^21.7b0"
+flake8 = "^3.9.2"
+pre-commit = "^2.14.0"
+flake8-isort = "^4.0.0"
+flake8-docstrings = "^1.6.0"
+isort = "^5.9.3"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,18 @@
+{
+    "global_env_vars": [
+        {
+            "DEVICE_ID": 50050
+        }
+    ],
+    "containers": [
+        {
+            "image": "alpine",
+            "command": "/bin/sh -c 'echo $HOLA $DEVICE_ID'",
+            "env_vars": [
+                {
+                    "HOLA": "crayola"
+                }
+            ]
+        }
+    ]
+}
