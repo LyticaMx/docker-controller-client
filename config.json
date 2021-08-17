@@ -1,18 +1,13 @@
-{
-    "global_env_vars": [
-        {
-            "DEVICE_ID": 50050
-        }
-    ],
-    "containers": [
-        {
+[
+    {
+        "id": "4",
+        "version": "4",
+        "config": {
+            "name": "autorunnertest",
             "image": "alpine",
-            "command": "/bin/sh -c 'echo $HOLA $DEVICE_ID'",
-            "env_vars": [
-                {
-                    "HOLA": "crayola"
-                }
-            ]
+            "environment": {
+                "HOLA": "crayola"
+            }
         }
-    ]
-}
+    }
+]
