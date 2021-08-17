@@ -19,19 +19,21 @@ class DockerAutoRunner:
     running_config = []
 
     def __init__(self, initial_config=None):
+        """Initialize autorunner and update current docker host"""
         self.client = docker.from_env()
         if initial_config:
             self.config = initial_config
-        self.update_containers()
 
-    def update_config(self):
+    def get_new_config(self):
         """Get json config from server"""
         path = os.path.abspath("config.json")
         with open(path, "r") as myfile:
             data = myfile.read()
         self.config = json.loads(data)
+        print(self.config)
+        return self.config
 
-    def set_running_config(self):
+    def get_running_config(self):
         """Get config from runnning containers"""
         current_config = []
         containers = self.get_running_containers()
@@ -43,6 +45,7 @@ class DockerAutoRunner:
                 }
             )
         self.running_config = current_config
+        return current_config
 
     def get_running_containers(self):
         """
@@ -54,16 +57,12 @@ class DockerAutoRunner:
         return self.client.containers.list(all=True, filters=filters)
 
     def get_container_by_id(self, id):
-        filters = {"label": id}
-        return self.client.containers.list(filters=filters)[0]
-
-    def delete_container(self, id):
-        container = self.get_container_by_id(id)
-        if container.status() == "running":
-            container.stop()
-        container.remove()
+        """Gets a docker container labelled with a given id"""
+        filters = {"label": f"{self.id_label}={id}"}
+        return self.client.containers.list(all=True, filters=filters)[0]
 
     def has_updated_version(self, id):
+        """ "Checks if a container has new configuration version"""
         running_version = next(filter(lambda x: x["id"] == id, self.running_config))[
             "version"
         ]
@@ -71,6 +70,7 @@ class DockerAutoRunner:
         return running_version != new_version
 
     def get_classified_containers(self):
+        """Classify container configuration comparing current vs new configs"""
         containers = {}
         new_config_ids = set([ct["id"] for ct in self.config])
         running_config_ids = set([ct["id"] for ct in self.running_config])
@@ -83,21 +83,41 @@ class DockerAutoRunner:
                 containers["to_update"].append(id)
         return containers
 
-    def delete_containers(self, containers_to_delete):
-        """Compare new and current config and filters outdated config"""
-        for container_config in containers_to_delete:
-            self.delete_container(container_config["id"])
+    def delete_containers(self, container_ids):
+        """Stop and removes running containers"""
+        for id in container_ids:
+            container = self.get_container_by_id(id)
+            if container.status == "running":
+                container.stop()
+            container.remove()
+            print(f"Removed container with id `{id}`")
 
-    def update_containers(self):
+    def create_containers(self, container_ids):
+        """Create containers based on its new config"""
+        for id in container_ids:
+            config = next(filter(lambda x: x["id"] == id, self.config))
+            labels = {self.id_label: id, self.version_label: config["version"]}
+            self.client.containers.run(detach=True, **{**config["config"], **{"labels": labels}})
+            print(f"Created container with id `{id}`")
+
+    def update_containers(self, container_ids):
+        """Delete old container and creates it with its new config"""
+        self.delete_containers(container_ids)
+        self.create_containers(container_ids)
+
+    def update(self):
         """Update containers based on the current configuration"""
-        self.update_config()
-        self.set_running_config()
+        self.get_new_config()
+        self.get_running_config()
         containers = self.get_classified_containers()
-        print(containers)
+        self.delete_containers(containers["to_delete"])
+        self.create_containers(containers["to_create"])
+        self.update_containers(containers["to_update"])
 
 
 if __name__ == "__main__":
     controller = DockerAutoRunner()
     while True:
-        time.sleep(3000)
-        controller.update_containers()
+        print("Updating docker host")
+        controller.update()
+        time.sleep(5)
