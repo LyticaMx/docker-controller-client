@@ -4,13 +4,36 @@ import docker
 import json
 import os
 import time
+import logging
+
+import argparse
+
+logger = logging.getLogger(__name__)
+handler = logging.StreamHandler()
+formatter = logging.Formatter("%(asctime)s - [%(levelname)s] - %(message)s")
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+
+def init_argparse():
+    parser = argparse.ArgumentParser(
+        usage="%(prog)s [OPTION]",
+        description="Controls a docker  host with a JSON-based config.",
+    )
+    parser.add_argument(
+        "-d",
+        "--debug",
+        help="Show debug logs",
+        action='store_true'
+    )
+    return parser
 
 
 class DockerAutoRunner:
     """
     Docker auto runner
 
-    Control a docker  host with a JSON-based config
+    Controls a docker  host with a JSON-based config
     """
 
     id_label = "autorunner.id"
@@ -24,13 +47,23 @@ class DockerAutoRunner:
         if initial_config:
             self.config = initial_config
 
+    def _catch_docker_error(method):
+        def catch_error(self, *args, **kwargs):
+            try:
+                method(self, *args, **kwargs)
+            except docker.errors.APIClient as error:
+                logger.error(f"Docker host error: {error}")
+
+        return catch_error
+
     def get_new_config(self):
         """Get json config from server"""
         path = os.path.abspath("config.json")
         with open(path, "r") as myfile:
             data = myfile.read()
-        self.config = json.loads(data)
-        print(self.config)
+        config = json.loads(data)
+        logger.debug(f"Received config: {config}")
+        self.config = config
         return self.config
 
     def get_running_config(self):
@@ -83,6 +116,7 @@ class DockerAutoRunner:
                 containers["to_update"].append(id)
         return containers
 
+    @_catch_docker_error
     def delete_containers(self, container_ids):
         """Stop and removes running containers"""
         for id in container_ids:
@@ -90,15 +124,18 @@ class DockerAutoRunner:
             if container.status == "running":
                 container.stop()
             container.remove()
-            print(f"Removed container with id `{id}`")
+            logger.debug(f"Removed container with id `{id}`")
 
+    @_catch_docker_error
     def create_containers(self, container_ids):
         """Create containers based on its new config"""
         for id in container_ids:
             config = next(filter(lambda x: x["id"] == id, self.config))
             labels = {self.id_label: id, self.version_label: config["version"]}
-            self.client.containers.run(detach=True, **{**config["config"], **{"labels": labels}})
-            print(f"Created container with id `{id}`")
+            self.client.containers.run(
+                detach=True, **{**config["config"], **{"labels": labels}}
+            )
+            logger.debug(f"Created container with id `{id}`")
 
     def update_containers(self, container_ids):
         """Delete old container and creates it with its new config"""
@@ -116,8 +153,15 @@ class DockerAutoRunner:
 
 
 if __name__ == "__main__":
+    args = init_argparse().parse_args()
+    if args.debug:
+        logging.getLogger(__name__).setLevel(logging.DEBUG)
+
     controller = DockerAutoRunner()
     while True:
-        print("Updating docker host")
-        controller.update()
+        try:
+            logger.debug("Updating docker host")
+            controller.update()
+        except Exception as error:
+            logger.error(f"Updateing docker host failed, error: {error}")
         time.sleep(5)
