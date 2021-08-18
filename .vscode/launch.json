@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["-f", "./config.json", "-d"]
+            "args": ["-f", "./json_example/config.json", "-d"]
         }
     ]
 }
