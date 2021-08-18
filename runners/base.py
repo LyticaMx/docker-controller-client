@@ -1,35 +1,13 @@
-"""Docker controller"""
+"""Base autorunner"""
 
-import docker
-import json
-import os
-import time
 import logging
 
-import argparse
+import docker
 
 logger = logging.getLogger(__name__)
-handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s - [%(levelname)s] - %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
 
 
-def init_argparse():
-    parser = argparse.ArgumentParser(
-        usage="%(prog)s [OPTION]",
-        description="Controls a docker  host with a JSON-based config.",
-    )
-    parser.add_argument(
-        "-d",
-        "--debug",
-        help="Show debug logs",
-        action='store_true'
-    )
-    return parser
-
-
-class DockerAutoRunner:
+class BaseRunner:
     """
     Docker auto runner
 
@@ -57,14 +35,8 @@ class DockerAutoRunner:
         return catch_error
 
     def get_new_config(self):
-        """Get json config from server"""
-        path = os.path.abspath("config.json")
-        with open(path, "r") as myfile:
-            data = myfile.read()
-        config = json.loads(data)
-        logger.debug(f"Received config: {config}")
-        self.config = config
-        return self.config
+        """Retrieves new JSON config"""
+        raise NotImplementedError("get_new_config must be implemented")
 
     def get_running_config(self):
         """Get config from runnning containers"""
@@ -95,7 +67,7 @@ class DockerAutoRunner:
         return self.client.containers.list(all=True, filters=filters)[0]
 
     def has_updated_version(self, id):
-        """ "Checks if a container has new configuration version"""
+        """Checks if a container has new configuration version"""
         running_version = next(filter(lambda x: x["id"] == id, self.running_config))[
             "version"
         ]
@@ -150,18 +122,3 @@ class DockerAutoRunner:
         self.delete_containers(containers["to_delete"])
         self.create_containers(containers["to_create"])
         self.update_containers(containers["to_update"])
-
-
-if __name__ == "__main__":
-    args = init_argparse().parse_args()
-    if args.debug:
-        logging.getLogger(__name__).setLevel(logging.DEBUG)
-
-    controller = DockerAutoRunner()
-    while True:
-        try:
-            logger.debug("Updating docker host")
-            controller.update()
-        except Exception as error:
-            logger.error(f"Updateing docker host failed, error: {error}")
-        time.sleep(5)
