@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "python-docker-controller"
+name = "docker-controller-client"
 version = "0.1.0"
-description = "A simple script to control docker with python and a JSON config file"
-authors = ["Mario <mariohdpz@gmail.com>"]
+description = "Python client to control Docker by calling an API"
+authors = ["Mario <mario.hernandez@lytica.ai>"]
 
 [tool.poetry.dependencies]
 python = "^3.6.9"

@@ -7,56 +7,54 @@ import docker
 logger = logging.getLogger(__name__)
 
 
-class BaseRunner:
+class BaseController:
     """
-    Docker auto runner
+    Docker controller
 
-    Controls a docker  host with a JSON-based config
+    Controls a docker host with a JSON-based config
     """
 
-    id_label = "autorunner.id"
-    version_label = "autorunner.version"
-    config = []
+    id_label = "controller.id"
+    version_label = "controller.version"
+    docker_config = []
     running_config = []
 
-    def __init__(self, initial_config=None):
-        """Initialize autorunner and update current docker host"""
+    def __init__(self):
+        """Initialize controller and update current docker host"""
         self.client = docker.from_env()
-        if initial_config:
-            self.config = initial_config
 
     def _catch_docker_error(method):
         def catch_error(self, *args, **kwargs):
             try:
                 method(self, *args, **kwargs)
-            except docker.errors.APIClient as error:
+            except docker.errors.APIError as error:
                 logger.error(f"Docker host error: {error}")
 
         return catch_error
 
-    def get_new_config(self):
+    def get_new_docker_config(self):
         """Retrieves new JSON config"""
-        raise NotImplementedError("get_new_config must be implemented")
+        raise NotImplementedError("get_new_docker_config must be implemented")
 
-    def get_running_config(self):
+    def get_running_docker_config(self):
         """Get config from runnning containers"""
-        current_config = []
+        current_docker_config = []
         containers = self.get_running_containers()
         for container in containers:
-            current_config.append(
+            current_docker_config.append(
                 {
                     "id": container.labels[self.id_label],
                     "version": container.labels[self.version_label],
                 }
             )
-        self.running_config = current_config
-        return current_config
+        self.running_config = current_docker_config
+        return current_docker_config
 
     def get_running_containers(self):
         """
         Get all containers created by the controller
 
-        It filters containers by the autorunner labels
+        It filters containers by the controller labels
         """
         filters = {"label": [self.id_label, self.version_label]}
         return self.client.containers.list(all=True, filters=filters)
@@ -71,13 +69,15 @@ class BaseRunner:
         running_version = next(filter(lambda x: x["id"] == id, self.running_config))[
             "version"
         ]
-        new_version = next(filter(lambda x: x["id"] == id, self.config))["version"]
+        new_version = next(filter(lambda x: x["id"] == id, self.docker_config))[
+            "version"
+        ]
         return running_version != new_version
 
     def get_classified_containers(self):
         """Classify container configuration comparing current vs new configs"""
         containers = {}
-        new_config_ids = set([ct["id"] for ct in self.config])
+        new_config_ids = set([ct["id"] for ct in self.docker_config])
         running_config_ids = set([ct["id"] for ct in self.running_config])
         containers["to_delete"] = list(running_config_ids - new_config_ids)
         containers["to_create"] = list(new_config_ids - running_config_ids)
@@ -102,7 +102,7 @@ class BaseRunner:
     def create_containers(self, container_ids):
         """Create containers based on its new config"""
         for id in container_ids:
-            config = next(filter(lambda x: x["id"] == id, self.config))
+            config = next(filter(lambda x: x["id"] == id, self.docker_config))
             labels = {self.id_label: id, self.version_label: config["version"]}
             self.client.containers.run(
                 detach=True, **{**config["config"], **{"labels": labels}}
@@ -116,8 +116,8 @@ class BaseRunner:
 
     def update(self):
         """Update containers based on the current configuration"""
-        self.get_new_config()
-        self.get_running_config()
+        self.get_new_docker_config()
+        self.get_running_docker_config()
         containers = self.get_classified_containers()
         self.delete_containers(containers["to_delete"])
         self.create_containers(containers["to_create"])

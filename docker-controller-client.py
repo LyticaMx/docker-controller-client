@@ -4,7 +4,7 @@ import argparse
 import logging
 import time
 
-from runners import JsonFileRunner
+from controllers import JsonFileController
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -20,6 +20,7 @@ def init_argparse():
         description="Controls a docker  host with a JSON-based config.",
     )
     parser.add_argument("-d", "--debug", help="Show debug logs", action="store_true")
+    parser.add_argument("-f", "--file", help="Retrieve config from file", required=True)
     return parser
 
 
@@ -27,8 +28,7 @@ if __name__ == "__main__":
     args = init_argparse().parse_args()
     if args.debug:
         logging.getLogger(__name__).setLevel(logging.DEBUG)
-
-    controller = JsonFileRunner()
+    controller = JsonFileController(args.file)
     while True:
         try:
             logger.debug("Updating docker host")
