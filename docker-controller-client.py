@@ -4,13 +4,7 @@ import argparse
 import logging
 import time
 
-from controllers import JsonFileController
-
-logger = logging.getLogger(__name__)
-handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s - [%(levelname)s] - %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+from controllers import JsonFileController, logger
 
 
 def init_argparse():
@@ -27,7 +21,7 @@ def init_argparse():
 if __name__ == "__main__":
     args = init_argparse().parse_args()
     if args.debug:
-        logging.getLogger(__name__).setLevel(logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
     controller = JsonFileController(args.file)
     while True:
         try:
