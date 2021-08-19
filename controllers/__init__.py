@@ -2,8 +2,9 @@
 import logging
 
 from .local import JsonFileController
+from .remote import RestApiController
 
-__all__ = ["JsonFileController"]
+__all__ = ["JsonFileController", "RestApiController"]
 
 
 logger = logging.getLogger(__name__)

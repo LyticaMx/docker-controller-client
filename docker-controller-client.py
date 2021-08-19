@@ -4,7 +4,7 @@ import argparse
 import logging
 import time
 
-from controllers import JsonFileController, logger
+from controllers import JsonFileController, RestApiController, logger
 
 
 def init_argparse():
@@ -14,7 +14,8 @@ def init_argparse():
         description="Controls a docker  host with a JSON-based config.",
     )
     parser.add_argument("-d", "--debug", help="Show debug logs", action="store_true")
-    parser.add_argument("-f", "--file", help="Retrieve config from file", required=True)
+    parser.add_argument("-f", "--file", help="Retrieve config from file")
+    parser.add_argument("-u", "--url", help="Retrieve config from file")
     return parser
 
 
@@ -22,7 +23,11 @@ if __name__ == "__main__":
     args = init_argparse().parse_args()
     if args.debug:
         logger.setLevel(logging.DEBUG)
-    controller = JsonFileController(args.file)
+    if args.url:
+        controller = RestApiController(args.url)
+    if args.file:
+        controller = JsonFileController(args.file)
+
     while True:
         try:
             logger.debug("Updating docker host")

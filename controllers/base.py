@@ -92,22 +92,22 @@ class BaseController:
     def delete_containers(self, container_ids):
         """Stop and removes running containers"""
         for id in container_ids:
+            logger.debug(f"Removing container with id `{id}`")
             container = self.get_container_by_id(id)
             if container.status == "running":
                 container.stop()
             container.remove()
-            logger.debug(f"Removed container with id `{id}`")
 
     @_catch_docker_error
     def create_containers(self, container_ids):
         """Create containers based on its new config"""
         for id in container_ids:
             config = next(filter(lambda x: x["id"] == id, self.docker_config))
+            logger.debug(f"Creating container with id `{id}` and config: {config}")
             labels = {self.id_label: id, self.version_label: config["version"]}
             self.client.containers.run(
                 detach=True, **{**config["config"], **{"labels": labels}}
             )
-            logger.debug(f"Created container with id `{id}`")
 
     def update_containers(self, container_ids):
         """Delete old container and creates it with its new config"""
