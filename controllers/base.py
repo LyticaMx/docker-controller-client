@@ -45,6 +45,7 @@ class BaseController:
                 {
                     "id": container.labels[self.id_label],
                     "version": container.labels[self.version_label],
+                    "status": container.status,
                 }
             )
         self.running_config = current_docker_config
@@ -108,6 +109,10 @@ class BaseController:
             self.client.containers.run(
                 detach=True, **{**config["config"], **{"labels": labels}}
             )
+
+    def report_services_status(self):
+        """Implements status report if needed"""
+        pass
 
     def update_containers(self, container_ids):
         """Delete old container and creates it with its new config"""
