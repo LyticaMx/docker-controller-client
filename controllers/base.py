@@ -75,6 +75,23 @@ class BaseController:
         ]
         return running_version != new_version
 
+    def has_new_image(self, id):
+        """
+        Try to pull new image for a container
+
+        If pull is successfull or container has an outdated image
+        container.image.tags will be an empty list
+        """
+        container = self.get_container_by_id(id)
+        try:
+            image_tag = container.image.tags.pop()
+        except IndexError:
+            return True
+        self.client.images.pull(image_tag)
+        if not container.image.tags:
+            return True
+        return False
+
     def get_classified_containers(self):
         """Classify container configuration comparing current vs new configs"""
         containers = {}
@@ -85,7 +102,7 @@ class BaseController:
         already_running = new_config_ids.intersection(running_config_ids)
         containers["to_update"] = []
         for id in already_running:
-            if self.has_updated_version(id):
+            if self.has_updated_version(id) or self.has_new_image(id):
                 containers["to_update"].append(id)
         return containers
 
@@ -113,6 +130,11 @@ class BaseController:
             self.client.containers.run(
                 detach=True, **{**container_config, **{"labels": labels}}
             )
+
+    def prune_docker_host(self):
+        """Delete stopped containers and unused images"""
+        self.client.containers.prune()
+        self.client.images.prune(filters={"dangling": False})
 
     def docker_login(self, credentials):
         """
@@ -145,3 +167,4 @@ class BaseController:
         self.delete_containers(containers["to_delete"])
         self.create_containers(containers["to_create"])
         self.update_containers(containers["to_update"])
+        self.prune_docker_host()

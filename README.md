@@ -22,7 +22,7 @@ Python client to control Docker by calling an API
             "name": "dockercontrollertest",
             "image": "nginx",
             "credentials": { // optional, for private registries
-                "username": "mariohdpz",
+                "username": "jetson",
                 "registry": "ghcr.io"
             },
             "environment": {
