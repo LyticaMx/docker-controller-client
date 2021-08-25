@@ -27,7 +27,7 @@ class BaseController:
         def catch_error(self, *args, **kwargs):
             try:
                 method(self, *args, **kwargs)
-            except docker.errors.APIError as error:
+            except docker.errors.DockerException as error:
                 logger.error(f"Docker host error: {error}")
 
         return catch_error
@@ -104,10 +104,28 @@ class BaseController:
         """Create containers based on its new config"""
         for id in container_ids:
             config = next(filter(lambda x: x["id"] == id, self.docker_config))
+            container_config = config["config"]
             logger.debug(f"Creating container with id `{id}` and config: {config}")
+            if "credentials" in container_config:
+                self.docker_login(container_config["credentials"])
+                del container_config["credentials"]
             labels = {self.id_label: id, self.version_label: config["version"]}
             self.client.containers.run(
-                detach=True, **{**config["config"], **{"labels": labels}}
+                detach=True, **{**container_config, **{"labels": labels}}
+            )
+
+    def docker_login(self, credentials):
+        """
+        Log in to a given registry
+
+        Reads docker config JSON from default Docker path:
+        `$HOME/.docker/config.json`
+        """
+        try:
+            self.client.login(credentials["username"], registry=credentials["registry"])
+        except KeyError:
+            raise docker.errors.DockerException(
+                "Registry login failed, check container credentials"
             )
 
     def report_services_status(self):

@@ -21,6 +21,10 @@ Python client to control Docker by calling an API
         "config": {
             "name": "dockercontrollertest",
             "image": "nginx",
+            "credentials": { // optional, for private registries
+                "username": "mariohdpz",
+                "registry": "ghcr.io"
+            },
             "environment": {
                 "HOLA": "crayola"
             }
