@@ -1,0 +1,10 @@
+version: '3.1'
+
+services:
+
+  docker-controller-client:
+    build: .
+    container_name: docker-controller
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
