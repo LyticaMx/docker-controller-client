@@ -45,6 +45,18 @@ class RestApiController(BaseController):
         self.docker_config = config
         return self.docker_config
 
+    def delete_containers(self, container_ids):
+        """Delete containers and send status"""
+        deleted_container_ids = super().delete_containers(container_ids)
+        status = list(
+            map(
+                lambda x: {"id": x, "status": "deleted"},
+                deleted_container_ids,
+            )
+        )
+        requests.post(f"{self.url}/services/update-status", json=status)
+        return deleted_container_ids
+
     def report_services_status(self):
         """Send containers status to an API"""
         if not self.report_status:

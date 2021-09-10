@@ -115,12 +115,15 @@ class BaseController:
     @_catch_docker_error
     def delete_containers(self, container_ids):
         """Stop and removes running containers"""
+        deleted_containers_ids = []
         for id in container_ids:
             logger.debug(f"Removing container with id `{id}`")
             container = self.get_container_by_id(id)
             if container.status == "running":
                 container.stop()
             container.remove()
+            deleted_containers_ids.append(id)
+        return deleted_containers_ids
 
     @_catch_docker_error
     def create_containers(self, container_ids):
