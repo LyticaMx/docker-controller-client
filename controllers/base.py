@@ -24,19 +24,27 @@ class BaseController:
     version_label = "controller.version"
     docker_config = []
     running_config = []
+    clean_images = False
 
-    def __init__(self):
+    def __init__(self, **kargs):
         """Initialize controller and update current docker host"""
         self.client = docker.from_env()
+        if "clean_images" in kargs and kargs["clean_images"]:
+            self.clean_images = True
 
     def _catch_docker_error(method):
-        def catch_error(self, *args, **kwargs):
+        def catch_error(self, container_id):
             try:
-                method(self, *args, **kwargs)
+                method(self, container_id)
             except docker.errors.DockerException as error:
                 logger.error(f"Docker host error: {error}")
+                self.send_status_change_notification(container_id, "error")
 
         return catch_error
+
+    def send_status_change_notification(self, container_id, status):
+        """Send status change notification to the controller"""
+        pass
 
     def get_new_docker_config(self):
         """Retrieves new JSON config"""
@@ -113,37 +121,53 @@ class BaseController:
         return containers
 
     @_catch_docker_error
+    def delete_container(self, container_id):
+        """Delete a container"""
+        logger.debug(f"Removing container with id `{container_id}`")
+        container = self.get_container_by_id(container_id)
+        if container.status == "running":
+            container.stop()
+        container.remove()
+        self.send_status_change_notification(container_id, "removed")
+
+    @_catch_docker_error
+    def create_container(self, container_id):
+        """Create a new container"""
+        self.send_status_change_notification(container_id, "creating")
+        config = next(filter(lambda x: x["id"] == container_id, self.docker_config))
+        container_config = config["config"]
+        logger.debug(
+            f"Creating container with id `{container_id}` and config: {config}"
+        )
+        if "credentials" in container_config:
+            self.docker_login(container_config["credentials"])
+            del container_config["credentials"]
+        labels = {self.id_label: container_id, self.version_label: config["version"]}
+        self.client.containers.run(
+            detach=True,
+            **{
+                **container_config,
+                **{"labels": labels},
+                **{"log_config": docker_logging_config},
+            },
+        )
+        self.send_status_change_notification(container_id, "created")
+
     def delete_containers(self, container_ids):
         """Stop and removes running containers"""
         deleted_containers_ids = []
         for id in container_ids:
-            logger.debug(f"Removing container with id `{id}`")
-            container = self.get_container_by_id(id)
-            if container.status == "running":
-                container.stop()
-            container.remove()
+            self.delete_container(id)
             deleted_containers_ids.append(id)
         return deleted_containers_ids
 
-    @_catch_docker_error
     def create_containers(self, container_ids):
         """Create containers based on its new config"""
+        created_containers_ids = []
         for id in container_ids:
-            config = next(filter(lambda x: x["id"] == id, self.docker_config))
-            container_config = config["config"]
-            logger.debug(f"Creating container with id `{id}` and config: {config}")
-            if "credentials" in container_config:
-                self.docker_login(container_config["credentials"])
-                del container_config["credentials"]
-            labels = {self.id_label: id, self.version_label: config["version"]}
-            self.client.containers.run(
-                detach=True,
-                **{
-                    **container_config,
-                    **{"labels": labels},
-                    **{"log_config": docker_logging_config},
-                },
-            )
+            self.create_container(id)
+            created_containers_ids.append(id)
+        return created_containers_ids
 
     def prune_docker_host(self):
         """Delete stopped containers and unused images"""
@@ -181,4 +205,5 @@ class BaseController:
         self.delete_containers(containers["to_delete"])
         self.create_containers(containers["to_create"])
         self.update_containers(containers["to_update"])
-        self.prune_docker_host()
+        if self.clean_images:
+            self.prune_docker_host()

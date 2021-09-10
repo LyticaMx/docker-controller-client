@@ -18,7 +18,7 @@
             "request": "launch",
             "program": "docker-controller-client.py",
             "console": "integratedTerminal",
-            "args": ["-u", "http://localhost:8000", "-i", "my-device", "-d"]
+            "args": ["-u", "http://localhost:8000", "-i", "my-device", "-t", "5" , "-c","-d"]
         }
     ]
 }
