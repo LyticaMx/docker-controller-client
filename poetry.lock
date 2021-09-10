@@ -379,7 +379,7 @@ use_chardet_on_py3 = ["chardet (>=3.0.2,<5)"]
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 
@@ -493,7 +493,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6.9"
-content-hash = "475514d3e55b347de21193d4880916e879db8fbbe9c6ffc462998d34ab6922c9"
+content-hash = "faf5dbcc8a3c3264a0fb7491e6939199d06204859a1ab68e074a94ae5b555449"
 
 [metadata.files]
 appdirs = [
