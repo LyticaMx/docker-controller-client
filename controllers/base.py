@@ -172,7 +172,8 @@ class BaseController:
     def prune_docker_host(self):
         """Delete stopped containers and unused images"""
         self.client.containers.prune()
-        self.client.images.prune(filters={"dangling": False})
+        if self.clean_images:
+            self.client.images.prune(filters={"dangling": False})
 
     def docker_login(self, credentials):
         """
@@ -205,5 +206,4 @@ class BaseController:
         self.delete_containers(containers["to_delete"])
         self.create_containers(containers["to_create"])
         self.update_containers(containers["to_update"])
-        if self.clean_images:
-            self.prune_docker_host()
+        self.prune_docker_host()
