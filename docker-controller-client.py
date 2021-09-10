@@ -18,6 +18,12 @@ def init_argparse():
     parser.add_argument("-u", "--url", help="Host URL")
     parser.add_argument("-i", "--id", help="Device identifier for remote services")
     parser.add_argument(
+        "-c",
+        "--clean-images",
+        help="Clean old images befoer updating",
+        action="store_true",
+    )
+    parser.add_argument(
         "-t",
         "--time-delay",
         help="Delay between updates in seconds",
@@ -29,13 +35,16 @@ def init_argparse():
 
 if __name__ == "__main__":
     args = init_argparse().parse_args()
+    extra_args = {}
 
     if args.debug:
         logger.setLevel(logging.DEBUG)
+    if args.clean_images:
+        extra_args["clean_images"] = True
     if args.url and args.id:
-        controller = RestApiController(args.url, args.id)
+        controller = RestApiController(args.url, args.id, **extra_args)
     if args.file:
-        controller = JsonFileController(args.file)
+        controller = JsonFileController(args.file, **extra_args)
 
     while True:
         try:

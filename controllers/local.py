@@ -13,10 +13,10 @@ class JsonFileController(BaseController):
 
     path = None
 
-    def __init__(self, path):
+    def __init__(self, path, **kargs):
         """Initialize controller"""
         self.path = path
-        super().__init__()
+        super().__init__(**kargs)
 
     def get_new_docker_config(self):
         """Get json config from server"""

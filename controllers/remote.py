@@ -16,13 +16,7 @@ class RestApiController(BaseController):
     device_id = None
     report_status = True
 
-    def __init__(
-        self,
-        url,
-        device_id,
-        report_status=True,
-        headers=None,
-    ):
+    def __init__(self, url, device_id, report_status=True, headers=None, **kargs):
         """Initialize controller"""
         self.url = url
         self.device_id = device_id
@@ -30,7 +24,7 @@ class RestApiController(BaseController):
             self.report_status = False
         if headers:
             self.headers = headers
-        super().__init__()
+        super().__init__(**kargs)
 
     def get_new_docker_config(self):
         """Get json config from server"""
@@ -45,18 +39,16 @@ class RestApiController(BaseController):
         self.docker_config = config
         return self.docker_config
 
-    def delete_containers(self, container_ids):
-        """Delete containers and send status"""
-        deleted_container_ids = super().delete_containers(container_ids)
-        if deleted_container_ids:
-            status = list(
-                map(
-                    lambda x: {"id": x, "status": "deleted"},
-                    deleted_container_ids,
-                )
-            )
-            requests.post(f"{self.url}/services/update-status", json=status)
-        return deleted_container_ids
+    def send_status_change_notification(self, container_id, status):
+        """Send container status to an API"""
+        if not self.report_status:
+            return
+        body = [{"id": container_id, "status": status}]
+        logger.debug(f"Status change to be send: {body}")
+        requests.post(
+            f"{self.url}/services/update-status",
+            json=body,
+        )
 
     def report_services_status(self):
         """Send containers status to an API"""
