@@ -5,6 +5,8 @@ services:
   docker-controller-client:
     build: .
     container_name: docker-controller
+    command: python docker-controller-client.py -f /config.json -t 5 -d
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /usr/bin/docker:/usr/bin/docker
+      - ./json_example/config.json:/config.json

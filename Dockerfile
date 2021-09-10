@@ -18,4 +18,4 @@ RUN wget -O - https://raw.githubusercontent.com/sdispater/poetry/master/get-poet
 
 RUN poetry install --no-dev --no-interaction --no-ansi -vvv
 
-CMD ["python", "docker-controller-client.py", "-f", "/app/json_example/config.json", "-d"]
+CMD ["python", "docker-controller-client.py", "-f", "/config.json", "-d"]
