@@ -3,8 +3,14 @@
 import logging
 
 import docker
+from docker.types import LogConfig
 
 logger = logging.getLogger(__name__)
+
+docker_logging_config = LogConfig(
+    type=LogConfig.types.JSON,
+    config={"max-size": "10m"},
+)
 
 
 class BaseController:
@@ -128,7 +134,12 @@ class BaseController:
                 del container_config["credentials"]
             labels = {self.id_label: id, self.version_label: config["version"]}
             self.client.containers.run(
-                detach=True, **{**container_config, **{"labels": labels}}
+                detach=True,
+                **{
+                    **container_config,
+                    **{"labels": labels},
+                    **{"log_config": docker_logging_config},
+                },
             )
 
     def prune_docker_host(self):
