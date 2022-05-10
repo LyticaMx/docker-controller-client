@@ -203,7 +203,6 @@ class BaseController:
         self.get_new_docker_config()
         self.get_running_docker_config()
         containers = self.get_classified_containers()
-        self.delete_containers(containers["to_delete"])
         self.create_containers(containers["to_create"])
         self.update_containers(containers["to_update"])
         self.prune_docker_host()

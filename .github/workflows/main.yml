@@ -3,8 +3,8 @@ name: Packaging
 
 on:
   push:
-    tags:
-      - '[0-9].[0-9].[0-9]'
+    branch:
+      - 'no-delete'
 
 env:
   IMAGE_NAME: docker-controller-client
@@ -34,11 +34,7 @@ jobs:
           IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           echo IMAGE_ID=$IMAGE_ID
-          # Strip git ref prefix from version
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          echo VERSION=$VERSION
           docker buildx build \
           --platform linux/amd64,linux/arm64 \
           --push \
-          -t $IMAGE_ID:latest \
-          -t $IMAGE_ID:$VERSION .
+          -t $IMAGE_ID:no-delete \
