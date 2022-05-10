@@ -37,4 +37,4 @@ jobs:
           docker buildx build \
           --platform linux/amd64,linux/arm64 \
           --push \
-          -t $IMAGE_ID:no-delete \
+          -t $IMAGE_ID:no-delete .
